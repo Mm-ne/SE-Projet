@@ -155,23 +155,6 @@ memoryBlock *firstFit( int sizeOfNewElement ) {
 
 
 /* Allo/Deallo Section */
-int getAddress(){
-    memoryBlock* ptr = head;
-    int addressTotal;
-
-    if(head==NULL){
-        printf("--Memory Empty Try Filling it First!!\n\n");
-    }else{
-        while(ptr!=NULL){
-            addressTotal = ptr->address;
-            ptr=ptr->next;
-        }
-        printf("\n-> Remainder address = %d\n",addressTotal);
-
-        return addressTotal;
-    }
-}
-////////////////////////
 void allocateMemory(int newSize, memoryBlock* searchResultNode){
 
     printf("\n-----------------Memory Allocation---------------------\n\n");
@@ -204,6 +187,8 @@ void allocateMemory(int newSize, memoryBlock* searchResultNode){
 
         remainderNode->address = holdPrevAddress + remainderNode->size;
     }
+    upAdsMem();
+    printf("\n");
     displayUpdatedState(searchResultNode);
 
     holdNextNode = NULL;
@@ -219,9 +204,10 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
     if(ptrSearchRes==NULL){
         exit(1);
    
-    }else if(ptrSearchRes == head){
+    }else if(ptrSearchRes == head && ptrSearchRes->occupied == 1){ // if we want to delete the head and its occupied
+
         printf("\n--Head Address Changed!!\n");
-        if(ptr->next->occupied == 0){
+        if(ptr->next->occupied == 0){ // if next is not occupied
             ptr->size += ptr->next->size;
 
             ptr->address += ptr->next->size;
@@ -237,7 +223,7 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
         
             printf("\n--Memory Deallocated Successfully--\n");
             
-        }else{
+        }else{ // if next is occupied change the state only
             ptr->occupied = 0;
             printf("\n--Memory Deallocated Successfully--\n");
         }
@@ -247,7 +233,7 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
         while( ptr->next->size != ptrSearchRes->size ){
             ptr=ptr->next;
         }
-        if(ptrSearchRes->next == NULL){
+        if(ptrSearchRes->next == NULL){ // if we want to delete tha last node
             if(ptr->occupied == 0){
                 ptr->size += ptrSearchRes->size;
                 ptr->address += ptrSearchRes->size;
@@ -265,7 +251,7 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
 
         }
 
-        else if(ptr->occupied == 0 && ptrSearchRes->next->occupied == 1){ 
+        else if(ptr->occupied == 0 && ptrSearchRes->next->occupied == 1){ // prev not occupied(0)  deleteThisBlock(1)  next occupied(1)
 
             ptr->size += ptrSearchRes->size;
 
@@ -277,7 +263,7 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
 
             ptr->next = holdNext;
 
-        }else if(ptr->occupied == 0 && ptrSearchRes->next->occupied == 0){
+        }else if(ptr->occupied == 0 && ptrSearchRes->next->occupied == 0){ // prev not occupied(0)  deleteThisBlock(1)  next not occupied(0)
 
                 ptr->size += ptrSearchRes->size + ptrSearchRes->next->size;
 
@@ -288,7 +274,7 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
                 printf("\n--Memory Deallocated Successfully--\n");
                 ptr->next = holdNext;
 
-        }else if(ptr->occupied == 1 && ptrSearchRes->next->occupied == 0){
+        }else if(ptr->occupied == 1 && ptrSearchRes->next->occupied == 0){ // prev occupied(1)  deleteThisBlock(1)  next not occupied(0)
             ptr=ptr->next;
             ptrSearchRes = ptrSearchRes->next;
 
@@ -300,8 +286,8 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
             free(ptrSearchRes);
             printf("\n--Memory Deallocated Successfully--\n");
 
-        }else if(ptr->occupied == 1 && ptrSearchRes->next->occupied == 1){
-            ptr=ptr->next;
+        }else if(ptr->occupied == 1 && ptrSearchRes->next->occupied == 1){ // prev occupied(1)  deleteThisBlock(1)  next occupied(1)
+            ptr=ptr->next; 
 
             ptr->occupied = 0;
             printf("\n--Memory Deallocated Successfully--\n");
@@ -311,64 +297,88 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
 }
 //////////////////////
 memoryBlock* findMemoryDeallo(int address){
+
     memoryBlock* ptr=head;
 
     while(ptr->address != address){
         ptr=ptr->next;
     }
     if(ptr->occupied == 1){
+
         printf("--Memory Block Located : \n");
         printf(" -Address : %d | Occupied : %d | Size : %d\n", ptr->address, ptr->occupied, ptr->size);
-    }else if(ptr->occupied==0){
+
+    }else if(ptr->occupied==0){// deleteThisBlock not occupied -> No need to deallocate.
+
         printf("--Memory Block is not Occupied no need for memory deallocation.\n");
-        return NULL;
-    }else if(ptr==NULL){
-        printf("--There is no such address in This memory.\n\n");
+        ptr=NULL;
+        
     }
-    
-    
     return ptr;
 
 }
 /* End of Allo/Deallo Section */
 
+void upAdsMem(){
+    memoryBlock* ptr = head->next;
+    int holdAddress = head->address;
+
+    while(ptr!=NULL){
+        ptr->address = holdAddress + ptr->size;
+        holdAddress = ptr->address;
+        ptr=ptr->next;
+    }
+
+}
+
 
 /* Main */
 int main() {
 
-    int choice;
-    int newSize;
+    int choice;//menu choice
+    
+    int newSize;//input new node
+    int isOccupied;//input new node
 
-    int searchSize;
-    int searchAddress;
-    int isOccupied;
+    int searchSize;//first Fit search
+    int searchAddress;//Deallocation Search
+
 
     memoryBlock *ptrSearch=NULL;
 
+
+
     do {
+
         choice = Menu();
 
         switch (choice) {
             case 1:
+
                 printf(" -> Enter the new Size : ");
                 scanf("%d", &newSize);
+
                 printf(" -> Is Occupied [ 1 for yes || 0 for no ] : ");
                 scanf("%d", &isOccupied);
 
                 createMemoryBlock(newSize, isOccupied);
+
                 printf("\n");
 
                 break;
 
 
             case 2:
+
                 displayMemory(head);
+
                 printf("\n");
 
                 break;
 
 
             case 3:
+
                 printf(" -> Enter Size to search : ");
                 scanf("%d",&searchSize);
 
@@ -380,7 +390,9 @@ int main() {
 
 
             case 4:
+
                 printf("---Not Built Yet---\n");
+
                 break;
 
 
@@ -391,26 +403,37 @@ int main() {
 
 
             case 6:
+
                 if(ptrSearch!=NULL)
                     allocateMemory(searchSize, ptrSearch);
+
                 else printf("--Try Searching for the memory Block first!!\n");
+
                 //printf("---Not Built Yet---\n");
+
                 break;
 
 
             case 7:
-                printf("Enter Address to find the memory block : ");
-                scanf("%d",&searchAddress);
-                printf("\n");
-                ptrSearch = findMemoryDeallo(searchAddress);
-                if(ptrSearch!=NULL) deallocateMemory(ptrSearch);
 
+                printf("-> Enter Address to find the memory block : ");
+                scanf("%d",&searchAddress);
+
+                printf("\n");
+
+                ptrSearch = findMemoryDeallo(searchAddress);
+
+                if(ptrSearch!=NULL) deallocateMemory(ptrSearch);
+                upAdsMem();
+                
                 //printf("---Not Built Yet---\n");
                 break;
 
 
             default:
+
                 printf("--Choose a correct number in the list pls!!\n");
+
                 break;        
         }
 
