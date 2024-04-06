@@ -76,12 +76,12 @@ void createMemoryBlock(int sizeNewBlock, int isOccupied) {
         calcAddressTotal = 0;
         while (ptr2->next != NULL) {
             //printf("calcAdd = %d\n",calcAddressTotal);
-            calcAddressTotal = ptr2->address;
+            calcAddressTotal = ptr2->address + ptr2->size;
             //printf("calcAdd = %d\n\n",calcAddressTotal);
             ptr2 = ptr2->next;
         }
 
-        updateAdrs(ptr->next, calcAddressTotal+sizeNewBlock);
+        updateAdrs(ptr->next, calcAddressTotal);
     }
 }
 
@@ -320,12 +320,12 @@ memoryBlock* findMemoryDeallo(int address){
 /* End of Allo/Deallo Section */
 
 void upAdsMem(){
-    memoryBlock* ptr = head->next;
+    memoryBlock* ptr = head;
     int holdAddress = head->address;
 
-    while(ptr!=NULL){
-        ptr->address = holdAddress + ptr->size;
-        holdAddress = ptr->address;
+    while(ptr->next!=NULL){
+        ptr->next->address = ptr->address + ptr->size;
+
         ptr=ptr->next;
     }
 
