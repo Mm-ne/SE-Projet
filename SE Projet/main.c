@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+
 typedef struct MemoryBlock {
     int address;
     int size;
@@ -11,6 +12,20 @@ typedef struct MemoryBlock {
 } memoryBlock;
 
 memoryBlock *head = NULL; 
+
+/*
+typedef struct QueueNode {
+    memoryBlock *block;
+    struct QueueNode *next;
+} QueueNode;
+
+typedef struct Queue {
+    QueueNode *front;
+    QueueNode *rear;
+} Queue;
+
+Queue *allocationQueue = NULL;
+*/
 
 int Menu() {
     int choice;
@@ -22,7 +37,8 @@ int Menu() {
     printf("4-Best Fit Search.(Still on Work) \n");
     printf("5-Worst Fit Search.(Still on Work)\n");
     printf("6-Allocate Memory.\n");
-    printf("7-Deallocate Memory.\n\n");
+    printf("7-Deallocate Memory.\n");
+    printf("8-Deallocate Memory using FIFO.\n\n");
     printf("0-End Program.\n");
 
     printf("\n--> Your Choice : ");
@@ -49,6 +65,24 @@ memoryBlock *createNode(int newSize, int isOccupied) {
     return temp;
 }
 ///////////////////////////
+void upAdsMem(){
+    memoryBlock* ptr = head;
+    int holdAddress = head->address;
+
+    while(ptr->next!=NULL){
+        ptr->next->address = ptr->address + ptr->size;
+
+        ptr=ptr->next;
+    }
+
+}
+void updateAdrs(memoryBlock *ptr, int newAddress){
+
+    ptr->address = newAddress;
+
+    printf("\n--New Memory Block : \n");
+    printf("  -Address = %d | Occupied = %d | Size = %d\n\n", ptr->address, ptr->occupied, ptr->size);
+}
 
 
 
@@ -88,14 +122,6 @@ void createMemoryBlock(int sizeNewBlock, int isOccupied) {
 
 
 ///////////////////////////
-void updateAdrs(memoryBlock *ptr, int newAddress){
-
-    ptr->address = newAddress;
-
-    printf("\n--New Memory Block : \n");
-    printf("  -Address = %d | Occupied = %d | Size = %d\n\n", ptr->address, ptr->occupied, ptr->size);
-}
-
 
 
 /**************End of Creation Section***************/
@@ -127,6 +153,50 @@ void displayUpdatedState(memoryBlock *updtStateBlock){
 
 
 
+/* FIFO Selection Algo not Working needs fixing
+void fifoEnqueue(memoryBlock *block) {
+    QueueNode *newNode = (QueueNode *)malloc(sizeof(QueueNode));
+    if (newNode == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+    newNode->block = block;
+    newNode->next = NULL;
+
+    if (allocationQueue->rear == NULL) {
+        allocationQueue->front = allocationQueue->rear = newNode;
+    } else {
+        allocationQueue->rear->next = newNode;
+        allocationQueue->rear = newNode;
+    }
+}
+
+memoryBlock *fifoDequeue() {
+    if (allocationQueue->front == NULL) {
+        printf("Queue is empty\n");
+        return NULL;
+    }
+    QueueNode *temp = allocationQueue->front;
+    memoryBlock *block = temp->block;
+    allocationQueue->front = allocationQueue->front->next;
+    if (allocationQueue->front == NULL) {
+        allocationQueue->rear = NULL;
+    }
+    free(temp);
+    return block;
+}
+
+void deallocateMemoryFIFO() {
+    memoryBlock *block = fifoDequeue();
+    if (block != NULL) {
+        block->occupied = 0;
+        printf("Deallocated memory block: Address %d, Size %d\n", block->address, block->size);
+    } else {
+        printf("No memory blocks to deallocate\n");
+    }
+}
+*/
+
 
 
 /* Search Section */
@@ -148,9 +218,35 @@ memoryBlock *firstFit( int sizeOfNewElement ) {
     }
 
 }
+memoryBlock *bestFit(int sizeOfNewElement) {
+    memoryBlock *bestFitBlock = NULL;
+    memoryBlock *ptr = head;
+
+    int minFragmentation = INT_MAX; // Initialize to maximum possible value
+
+    while (ptr != NULL) {
+        if (sizeOfNewElement <= ptr->size && ptr->occupied != 1) {
+            int fragmentation = ptr->size - sizeOfNewElement;
+            if (fragmentation >= 0 && fragmentation < minFragmentation) {
+                minFragmentation = fragmentation;
+                bestFitBlock = ptr;
+            }
+        }
+        ptr = ptr->next;
+    }
+
+    if (bestFitBlock != NULL) {
+        printf("-> Best Fit Search Successful....\n");
+        printf("-- Memory Block Located:\n");
+        printf("  - Address: %d | Occupied: %d | Size: %d\n", bestFitBlock->address, bestFitBlock->occupied, bestFitBlock->size);
+        return bestFitBlock;
+    } else {
+        printf("-- Best Fit Search Unsuccessful....\n");
+        printf("-- Unable to locate a suitable memory block.\n\n");
+        return NULL;
+    }
+}
 /* End of Search Section */
-
-
 
 
 
@@ -193,6 +289,7 @@ void allocateMemory(int newSize, memoryBlock* searchResultNode){
 
     holdNextNode = NULL;
     remainderNode = NULL;
+    fifoEnqueue(searchResultNode);
 
     printf("\n-------------------------------------------------------\n");
 }
@@ -294,6 +391,15 @@ void deallocateMemory(memoryBlock* ptrSearchRes){
         }
 
     }
+
+    // Dequeue and free the memory block
+    memoryBlock *block = fifoDequeue();
+    if (block != ptrSearchRes) {
+        printf("Error: Dequeued block does not match deallocation block\n");
+        exit(1);
+    }
+    free(block);
+
 }
 //////////////////////
 memoryBlock* findMemoryDeallo(int address){
@@ -319,21 +425,25 @@ memoryBlock* findMemoryDeallo(int address){
 }
 /* End of Allo/Deallo Section */
 
-void upAdsMem(){
-    memoryBlock* ptr = head;
-    int holdAddress = head->address;
 
-    while(ptr->next!=NULL){
-        ptr->next->address = ptr->address + ptr->size;
 
-        ptr=ptr->next;
-    }
 
-}
+
+
+
+///////////////////////////////////
+
 
 
 /* Main */
 int main() {
+
+    allocationQueue = (Queue *)malloc(sizeof(Queue));
+    if (allocationQueue == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+    allocationQueue->front = allocationQueue->rear = NULL;
 
     int choice;//menu choice
     
@@ -355,13 +465,12 @@ int main() {
         switch (choice) {
             case 1:
 
-                printf(" -> Enter the new Size : ");
-                scanf("%d", &newSize);
-
-                printf(" -> Is Occupied [ 1 for yes || 0 for no ] : ");
-                scanf("%d", &isOccupied);
-
-                createMemoryBlock(newSize, isOccupied);
+                createMemoryBlock(400, 1);
+                createMemoryBlock(1000, 0);
+                createMemoryBlock(800, 1);
+                createMemoryBlock(3000, 1);
+                createMemoryBlock(500, 0);
+                createMemoryBlock(200, 1);
 
                 printf("\n");
 
@@ -391,7 +500,13 @@ int main() {
 
             case 4:
 
-                printf("---Not Built Yet---\n");
+                printf(" -> Enter Size to search : ");
+                scanf("%d",&searchSize);
+
+                printf("\n");
+
+                ptrSearch = bestFit(searchSize);
+                        
 
                 break;
 
@@ -429,6 +544,10 @@ int main() {
                 //printf("---Not Built Yet---\n");
                 break;
 
+            case 8:
+
+                deallocateMemoryFIFO();
+                printf("\n");
 
             default:
 
@@ -439,6 +558,7 @@ int main() {
 
     } while (choice != 0);
 
+    free(allocationQueue);
 
     return 0;
 }
